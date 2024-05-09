@@ -2,6 +2,7 @@
 
 import React, { useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function RegisterForm() {
   const [name, setName] = useState("");
@@ -9,10 +10,9 @@ export default function RegisterForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const formRef = useRef(null);
+  const router = useRouter();
 
   const handleSubmit = async (e) => {
-    // e.preventDefault();
     e.preventDefault();
 
     if (!name || !email || !password) {
@@ -21,6 +21,19 @@ export default function RegisterForm() {
     }
 
     try {
+      const resUserExists = await fetch("api/userExists", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      const { user } = await resUserExists.json();
+
+      if (user) {
+        setError("User already exists");
+        return;
+      }
+
       const res = await fetch("api/register", {
         method: "POST",
         headers: {
@@ -33,10 +46,10 @@ export default function RegisterForm() {
         }),
       });
       console.log("res:", res);
-      const form = e.target;
-      form.reset();
       if (res.ok) {
-        formRef.current.reset();
+        const form = e.target;
+        form.reset();
+        router.push("/");
         console.log("target:", e.target);
       } else {
         console.log("register failed");
@@ -49,11 +62,7 @@ export default function RegisterForm() {
     <div className="grid place-items-center h-screen">
       <div className="shadow-lg p-5 rounded-lg border-t-4 border-green-400">
         <h1 className="text-xl font-bold my-4">Register</h1>
-        <form
-          onSubmit={handleSubmit}
-          ref={formRef}
-          className="flex flex-col gap-3"
-        >
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <input
             // value={name}
             onChange={(e) => setName(e.target.value)}
